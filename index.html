@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>EJAA - Orders · #5837 · Shopify</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:#f6f6f7;color:#202223;-webkit-text-size-adjust:100%;}
+body{display:flex;flex-direction:column;}
+
+/* ── BROWSER BAR ── */
+.browser-bar{background:#2c2c2c;padding:6px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.browser-tabs{display:flex;gap:3px;overflow:hidden;}
+.tab{background:#3a3a3a;color:#ccc;padding:5px 10px;border-radius:5px 5px 0 0;font-size:11px;display:flex;align-items:center;gap:5px;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;}
+.tab.active{background:#f6f6f7;color:#202223;}
+.tab-close{opacity:.4;font-size:9px;flex-shrink:0;}
+.address-bar{background:#fff;border-radius:20px;padding:3px 12px;font-size:11px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ── SHOPIFY HEADER ── */
+.shopify-header{background:#1a1a2e;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;}
+.shopify-logo{display:flex;align-items:center;gap:6px;color:#fff;font-size:13px;font-weight:600;flex-shrink:0;}
+.shopify-spring{font-size:10px;color:#aaa;}
+.shopify-search{background:#2a2a3e;border:1px solid #3a3a5e;border-radius:6px;padding:5px 10px;color:#ccc;font-size:11px;flex:1;max-width:260px;display:flex;align-items:center;gap:5px;}
+.shopify-header-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.shopify-icon-btn{background:none;border:none;cursor:pointer;color:#ccc;font-size:15px;padding:2px;}
+.profile-btn{background:#00a86b;border:none;cursor:pointer;color:#fff;font-size:11px;font-weight:700;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow .2s;}
+.profile-btn:hover{box-shadow:0 0 0 3px rgba(0,168,107,.4);}
+
+/* ── MAIN LAYOUT ── */
+.main-layout{display:flex;flex:1;overflow:hidden;min-height:0;}
+.sidebar{width:200px;background:#1a1a2e;padding:10px 0;flex-shrink:0;overflow-y:auto;}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:8px 14px;color:#ccc;font-size:12px;cursor:pointer;transition:background .15s;}
+.sidebar-item:hover,.sidebar-item.active{background:#2a2a3e;color:#fff;}
+.sidebar-badge{background:#e44d36;color:#fff;font-size:10px;padding:1px 5px;border-radius:10px;margin-left:auto;}
+.sidebar-sub{padding:5px 14px 5px 38px;color:#888;font-size:11px;cursor:pointer;}
+.sidebar-sub:hover{color:#ccc;}
+.sidebar-divider{height:1px;background:#2a2a3e;margin:7px 0;}
+.content{flex:1;overflow-y:auto;padding:16px;min-width:0;}
+.breadcrumb{font-size:12px;color:#8c9196;margin-bottom:8px;}
+.order-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.order-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.order-title h1{font-size:20px;font-weight:700;}
+.badge{padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600;}
+.badge-yellow{background:#fff3c4;color:#916a00;}
+.badge-orange{background:#ffd79d;color:#7b4a00;}
+.order-meta{font-size:11px;color:#8c9196;margin-top:3px;}
+.order-actions{display:flex;gap:6px;margin-left:auto;flex-shrink:0;flex-wrap:wrap;}
+.btn{padding:6px 11px;border-radius:7px;border:1px solid #ccc;background:#fff;font-size:12px;cursor:pointer;font-weight:500;}
+.btn:hover{background:#f4f4f4;}
+.card{background:#fff;border-radius:10px;border:1px solid #e1e3e5;margin-bottom:12px;overflow:hidden;}
+.card-header{padding:11px 15px;display:flex;align-items:center;gap:7px;border-bottom:1px solid #f0f1f2;font-size:12px;font-weight:600;}
+.badge-unfulfilled{background:#fff3c4;color:#7b4a00;padding:2px 7px;border-radius:100px;font-size:11px;}
+.badge-pending{background:#ffd79d;color:#7b4a00;padding:2px 7px;border-radius:100px;font-size:11px;}
+.shipping-row{display:flex;align-items:center;gap:7px;font-size:12px;color:#555;padding:8px 15px;border-bottom:1px solid #f0f1f2;}
+.product-row{display:flex;align-items:center;gap:10px;padding:12px 15px;flex-wrap:wrap;}
+.product-img{width:40px;height:40px;border-radius:6px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.product-info{flex:1;min-width:90px;}
+.product-name{font-size:12px;font-weight:600;}
+.product-variant{font-size:11px;color:#8c9196;}
+.product-price{font-size:12px;color:#8c9196;text-decoration:line-through;}
+.product-final{font-size:12px;font-weight:600;}
+.product-qty{font-size:12px;color:#555;}
+.product-total{font-size:12px;font-weight:600;}
+.fulfill-btn{background:#008060;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;margin:0 15px 12px auto;display:flex;align-items:center;gap:5px;}
+.warning-box{background:#fff3c4;border-left:4px solid #f0b429;padding:9px 13px;margin:0 15px 13px;border-radius:0 6px 6px 0;font-size:11px;color:#7b4a00;display:flex;gap:6px;}
+.summary-row{display:flex;justify-content:space-between;padding:5px 15px;font-size:12px;}
+.summary-row.total{font-weight:700;border-top:1px solid #f0f1f2;padding-top:9px;margin-top:3px;}
+.right-panel{width:230px;flex-shrink:0;padding:14px 12px;overflow-y:auto;background:#f6f6f7;border-left:1px solid #e1e3e5;}
+.panel-section{margin-bottom:15px;}
+.panel-title{font-size:12px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.panel-edit{color:#2c6ecb;font-size:11px;cursor:pointer;}
+.panel-text{font-size:11px;color:#555;line-height:1.6;}
+.tag-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.tag{background:#e4e5e7;color:#555;font-size:10px;padding:2px 6px;border-radius:4px;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9000;align-items:flex-end;justify-content:center;}
+.modal-overlay.active{display:flex;}
+@media(min-width:500px){.modal-overlay{align-items:center;padding:16px;}}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:400px;text-align:center;animation:slideUp .25s ease;}
+@media(min-width:500px){.modal{border-radius:18px;padding:28px 24px;}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:none;opacity:1;}}
+.modal-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto 20px;}
+@media(min-width:500px){.modal-handle{display:none;}}
+.modal-icon{font-size:42px;margin-bottom:10px;}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:5px;}
+.modal p{font-size:13px;color:#888;margin-bottom:18px;}
+.modal input{width:100%;padding:14px;border:2px solid #e1e3e5;border-radius:12px;font-size:26px;text-align:center;letter-spacing:10px;outline:none;transition:border-color .2s;font-weight:800;}
+.modal input:focus{border-color:#800020;}
+.modal-btn{margin-top:14px;width:100%;background:linear-gradient(135deg,#800020,#c0002a);color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;}
+.modal-error{color:#e44d36;font-size:12px;margin-top:8px;display:none;}
+.db-banner{display:none;position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:9px 14px;font-size:12px;font-weight:600;z-index:9999;text-align:center;line-height:1.5;}
+.db-banner.show{display:block;}
+
+/* ═══════════════════════════
+   CHAT PANEL
+═══════════════════════════ */
+.chat-backdrop{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.35);}
+.chat-backdrop.active{display:block;}
+
+.chat-panel{
+  position:fixed;bottom:0;right:16px;
+  width:430px;background:#fff;
+  border-radius:20px 20px 0 0;
+  box-shadow:0 -4px 40px rgba(0,0,0,.25);
+  z-index:850;display:none;flex-direction:column;
+  overflow:hidden;max-height:90vh;
+}
+.chat-panel.active{display:flex;}
+@media(max-width:600px){.chat-panel{right:0;left:0;width:100%;border-radius:0;max-height:100dvh;height:100dvh;}}
+
+/* ── HEADER ── */
+.chat-header{
+  background:linear-gradient(135deg,#0d0d1a 0%,#1a0a2e 50%,#2d0a1e 100%);
+  padding:12px 14px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.chat-back-btn{background:none;border:none;cursor:pointer;font-size:24px;color:#fff;line-height:1;padding:0 6px 0 0;display:none;opacity:.8;}
+@media(max-width:600px){.chat-back-btn{display:block;}}
+
+/* ── STATUS PILLS IN HEADER ── */
+.header-status-row{flex:1;display:flex;align-items:center;gap:12px;min-width:0;}
+.hsr-user{display:flex;align-items:center;gap:6px;}
+.hsr-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;position:relative;border:2px solid rgba(255,255,255,.2);}
+.hsr-info{min-width:0;}
+.hsr-name{font-size:12px;font-weight:800;color:#fff;letter-spacing:.5px;font-family:'Inter',sans-serif;}
+.hsr-status{display:flex;align-items:center;gap:4px;margin-top:1px;}
+/* NEW: Pulsing ring for online */
+.hsr-ring{width:10px;height:10px;border-radius:50%;flex-shrink:0;position:relative;}
+.hsr-ring.offline{background:#6b7280;}
+.hsr-ring.online{background:#22c55e;}
+.hsr-ring.online::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid #22c55e;animation:ringPulse 1.8s infinite;opacity:0;}
+@keyframes ringPulse{0%{transform:scale(1);opacity:.8;}100%{transform:scale(2);opacity:0;}}
+.hsr-st{font-size:10px;color:rgba(255,255,255,.55);font-weight:500;}
+.hsr-divider{width:1px;height:28px;background:rgba(255,255,255,.12);}
+.header-right{display:flex;gap:6px;flex-shrink:0;}
+.icoBtn{background:rgba(255,255,255,.1);border:none;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s;color:#fff;}
+.icoBtn:hover{background:rgba(255,255,255,.22);}
+.my-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;border:1.5px solid;white-space:nowrap;font-family:'Inter',sans-serif;}
+
+/* ══════════════════════════
+   CHAT BODY + ANIMATED BG
+══════════════════════════ */
+.chat-body{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:14px 12px 8px;
+  display:flex;flex-direction:column;gap:4px;
+  min-height:0;position:relative;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+.chat-body::-webkit-scrollbar{width:0;}
+
+/* Animated background canvas */
+#bgCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.55;}
+
+/* All messages sit above canvas */
+.chat-body>*:not(#bgCanvas){position:relative;z-index:1;}
+
+.chat-empty{text-align:center;color:#6b7280;font-size:13px;margin:auto;padding:30px 20px;line-height:2.2;z-index:1;position:relative;}
+.chat-empty-ico{font-size:48px;display:block;margin-bottom:10px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+.date-div{text-align:center;margin:8px 0;flex-shrink:0;z-index:1;}
+.date-div span{font-size:11px;color:#fff;font-weight:600;background:rgba(0,0,0,.25);padding:3px 12px;border-radius:10px;backdrop-filter:blur(8px);}
+
+/* ── MESSAGE GROUP ── */
+.mg{display:flex;flex-direction:column;margin-bottom:6px;}
+.mg.out{align-items:flex-end;}
+.mg.in{align-items:flex-start;}
+
+/* Name row with animated avatar */
+.mg-nameline{display:flex;align-items:center;gap:7px;margin-bottom:5px;padding:0 2px;}
+.mg.out .mg-nameline{flex-direction:row-reverse;}
+
+/* Animated avatar */
+.msg-av{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:#fff;flex-shrink:0;
+  position:relative;overflow:visible;
+  transition:transform .2s;
+}
+/* avatar state overlays */
+.msg-av .av-emoji{
+  position:absolute;top:-8px;right:-8px;
+  font-size:16px;line-height:1;
+  animation:popIn .3s cubic-bezier(.175,.885,.32,1.275);
+  pointer-events:none;
+}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* BANGERS font for names */
+.mg-name-txt{
+  font-family:'Bangers',cursive;
+  font-size:18px;letter-spacing:1.5px;
+  line-height:1;
+}
+.mg.in .mg-name-txt{color:#800020;}
+.mg.out .mg-name-txt{color:#0060c0;}
+
+/* Message row */
+.mr{display:flex;align-items:center;gap:6px;position:relative;transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
+.mg.out .mr{flex-direction:row-reverse;}
+
+/* REPLY / REACT action btns */
+.act-btn{
+  background:rgba(255,255,255,.9);border:1.5px solid rgba(0,0,0,.1);
+  border-radius:50%;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s;
+  flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.mr:hover .act-btn{opacity:1;}
+@media(max-width:600px){.act-btn{opacity:0!important;}}
+
+/* ── BUBBLE ── */
+.bbl{
+  max-width:75%;
+  min-width:60px;
+  padding:10px 13px;
+  border-radius:18px;
+  word-break:break-word;
+  position:relative;
+  user-select:text;-webkit-user-select:text;
+  transition:filter .1s,transform .1s;
+}
+.bbl.out{
+  background:linear-gradient(135deg,#0073e6,#0095f6);
+  color:#fff;border-bottom-right-radius:4px;
+  box-shadow:0 2px 12px rgba(0,149,246,.35);
+}
+.bbl.in{
+  background:linear-gradient(135deg,#6b0018,#800020);
+  color:#fff;border-bottom-left-radius:4px;
+  box-shadow:0 2px 12px rgba(128,0,32,.35);
+}
+.bbl.deleted{background:rgba(0,0,0,.12)!important;color:#888!important;box-shadow:none!important;font-style:italic;opacity:.6;}
+.bbl:active{filter:brightness(.9);transform:scale(.98);}
+
+/* BANGERS for bubble text */
+.bbl-txt{
+  display:block;
+  font-family:'Bangers',cursive;
+  font-size:17px;
+  letter-spacing:.8px;
+  line-height:1.4;
+  word-break:break-word;
+}
+.bbl-meta{display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap;}
+.bbl-time{font-size:10px;opacity:.65;font-family:'Inter',sans-serif;font-weight:500;}
+.bbl-tick{font-size:10px;opacity:.65;}
+.bbl-tick.blue{color:#60c0ff;opacity:1;}
+.bbl-edited{font-size:10px;opacity:.5;font-style:italic;font-family:'Inter',sans-serif;}
+
+/* ── SEEN BADGE ── */
+.seen-badge{
+  font-size:10px;color:rgba(255,255,255,.55);
+  font-family:'Inter',sans-serif;font-weight:600;
+  display:flex;align-items:center;gap:3px;margin-top:2px;padding:0 2px;
+}
+.mg.out .seen-badge{align-self:flex-end;}
+.mg.in .seen-badge{align-self:flex-start;}
+.seen-av-mini{
+  width:14px;height:14px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:7px;font-weight:800;color:#fff;
+}
+
+/* ── REPLY PREVIEW ── */
+.reply-preview{
+  border-left:3px solid rgba(255,255,255,.6);
+  border-radius:6px 6px 0 0;
+  padding:6px 10px;font-size:12px;
+  margin-bottom:6px;line-height:1.4;cursor:pointer;
+  background:rgba(0,0,0,.15);
+}
+.rp-name{font-weight:800;font-size:10px;margin-bottom:2px;font-family:'Bangers',cursive;letter-spacing:.8px;font-size:13px;}
+.rp-txt{opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;font-family:'Inter',sans-serif;font-size:11px;}
+.rp-img-thumb{width:32px;height:32px;border-radius:4px;object-fit:cover;margin-top:3px;}
+
+/* ── IMAGE/VIDEO ── */
+.bbl-media{border-radius:14px;overflow:hidden;cursor:pointer;position:relative;display:block;max-width:260px;}
+.bbl-media img{width:100%;display:block;object-fit:cover;max-height:280px;transition:opacity .3s;}
+.bbl-media video{width:100%;display:block;border-radius:14px;max-height:280px;background:#000;}
+.media-shimmer{width:220px;height:160px;background:linear-gradient(90deg,#c0203840 25%,#80001440 50%,#c0203840 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.upload-prog{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,.25);}
+.upload-bar{height:100%;background:#fff;width:0;transition:width .1s;border-radius:2px;}
+.upload-pct-lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.6);font-family:'Bangers',cursive;letter-spacing:1px;}
+
+/* video play overlay */
+.vid-play-over{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:14px;}
+.vid-play-ico{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+
+/* ── REACTIONS ── */
+.rx-bar{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;padding:0 2px;}
+.rx-chip{background:rgba(255,255,255,.88);border:1.5px solid rgba(0,0,0,.08);border-radius:100px;padding:3px 8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;box-shadow:0 1px 4px rgba(0,0,0,.1);transition:transform .1s;-webkit-user-select:none;user-select:none;}
+.rx-chip:active{transform:scale(.9);}
+.rx-chip.mine{border-color:#800020;background:#fce8ec;}
+.rx-chip .rc{font-size:14px;}
+.rx-chip .rn{font-size:10px;font-weight:700;color:#555;font-family:'Inter',sans-serif;}
+
+/* ── TYPING indicator ── */
+.typing-row{display:none;align-items:flex-end;gap:8px;padding:4px 0;}
+.typing-row.on{display:flex;}
+.typing-bbl{background:rgba(255,255,255,.85);border-radius:18px;border-bottom-left-radius:4px;padding:11px 16px;display:flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.12);backdrop-filter:blur(8px);}
+.t-dot{width:7px;height:7px;border-radius:50%;background:#800020;animation:tdot 1.2s infinite;}
+.t-dot:nth-child(2){animation-delay:.2s;}
+.t-dot:nth-child(3){animation-delay:.4s;}
+@keyframes tdot{0%,80%,100%{transform:scale(.7);opacity:.4;}40%{transform:scale(1.1);opacity:1;}}
+.typing-name{font-size:11px;color:#555;font-weight:600;font-family:'Inter',sans-serif;}
+
+/* ── REPLY BAR ── */
+.reply-bar{display:none;padding:8px 14px;background:linear-gradient(to right,rgba(128,0,32,.08),transparent);border-top:2px solid #800020;align-items:center;gap:8px;flex-shrink:0;}
+.reply-bar.on{display:flex;}
+.rb-line{width:3px;height:36px;background:linear-gradient(to bottom,#800020,#c0002a);border-radius:2px;flex-shrink:0;}
+.rb-info{flex:1;min-width:0;}
+.rb-name{font-family:'Bangers',cursive;font-size:14px;color:#800020;letter-spacing:.5px;}
+.rb-txt{font-size:11px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Inter',sans-serif;}
+.rb-thumb{width:30px;height:30px;border-radius:5px;object-fit:cover;flex-shrink:0;}
+.rb-cancel{background:none;border:none;cursor:pointer;font-size:18px;color:#999;padding:0 3px;line-height:1;}
+
+/* ── EDIT BAR ── */
+.edit-bar{display:none;padding:8px 14px;background:#fff9e8;border-top:2px solid #f59e0b;align-items:center;gap:8px;flex-shrink:0;}
+.edit-bar.on{display:flex;}
+.edit-bar-txt{font-size:12px;color:#92400e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Inter',sans-serif;}
+.edit-cancel-btn{background:none;border:none;cursor:pointer;font-size:18px;color:#92400e;line-height:1;}
+
+/* ── FOOTER ── */
+.chat-footer{padding:8px 10px;border-top:1px solid #f0f0f0;display:flex;gap:6px;align-items:flex-end;background:#fff;flex-shrink:0;padding-bottom:max(8px,env(safe-area-inset-bottom));}
+.footer-left{display:flex;gap:4px;align-items:flex-end;flex-shrink:0;}
+.chat-input-wrap{flex:1;display:flex;align-items:flex-end;background:#f5f5f5;border-radius:22px;border:1.5px solid #e5e5e5;padding:8px 12px;gap:6px;transition:border-color .2s;}
+.chat-input-wrap:focus-within{border-color:#800020;background:#fff;}
+.chat-input{flex:1;border:none;background:transparent;font-size:14px;resize:none;outline:none;max-height:100px;font-family:'Inter',sans-serif;line-height:1.45;color:#202223;}
+.chat-input::placeholder{color:#bbb;}
+.ico-btn{background:none;border:1.5px solid #e0e0e0;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;transition:background .15s,border-color .15s,transform .15s;color:#666;}
+.ico-btn:hover,.ico-btn:active{background:#fce8ec;border-color:#800020;color:#800020;transform:scale(1.08);}
+.send-btn{background:linear-gradient(135deg,#800020,#c0002a);color:#fff;border:none;border-radius:50%;width:42px;height:42px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 12px rgba(128,0,32,.45);transition:transform .15s,opacity .15s;}
+.send-btn:active{transform:scale(.9);}
+.send-btn:disabled{opacity:.4;cursor:not-allowed;}
+#mediaFileInput{display:none;}
+
+/* ── EMOJI PANEL ── */
+.emoji-panel-wrap{position:relative;}
+.emoji-panel{position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1px solid #f0f0f0;border-radius:16px 16px 0 0;padding:12px;display:none;grid-template-columns:repeat(8,1fr);gap:2px;box-shadow:0 -4px 24px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;}
+.emoji-panel.on{display:grid;}
+.ep-e{font-size:22px;cursor:pointer;text-align:center;padding:5px;border-radius:8px;transition:background .1s;}
+.ep-e:hover,.ep-e:active{background:#fce8ec;}
+
+/* ── REACTION PICKER ── */
+.rx-picker{position:fixed;background:#fff;border-radius:60px;padding:8px 12px;display:flex;gap:4px;box-shadow:0 6px 28px rgba(0,0,0,.22);z-index:9800;animation:rxPop .2s cubic-bezier(.175,.885,.32,1.4);}
+@keyframes rxPop{from{opacity:0;transform:scale(.5) translateY(12px);}to{opacity:1;transform:none;}}
+.rx-picker button{background:none;border:none;cursor:pointer;font-size:26px;line-height:1;padding:4px;border-radius:50%;transition:transform .12s;}
+.rx-picker button:hover,.rx-picker button:active{transform:scale(1.35);}
+
+/* ── CONTEXT MENU ── */
+.ctx-menu{position:fixed;background:#fff;border-radius:16px;overflow:hidden;min-width:190px;box-shadow:0 6px 32px rgba(0,0,0,.22);z-index:9700;animation:popUp .15s ease;}
+@keyframes popUp{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:none;}}
+.ctx-item{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;cursor:pointer;color:#202223;border-bottom:1px solid #f5f5f5;transition:background .1s;font-family:'Inter',sans-serif;}
+.ctx-item:last-child{border-bottom:none;}
+.ctx-item:active{background:#f5f5f5;}
+.ctx-item.danger{color:#e44d36;}
+.ctx-i{font-size:18px;width:24px;text-align:center;}
+.menu-dim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:9600;}
+.menu-dim.on{display:block;}
+
+/* ── PILL ── */
+.chat-pill{display:none;position:fixed;bottom:20px;right:16px;background:linear-gradient(135deg,#800020,#c0002a);color:#fff;padding:11px 18px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 5px 20px rgba(128,0,32,.5);z-index:800;align-items:center;gap:8px;font-family:'Bangers',cursive;letter-spacing:1px;font-size:15px;}
+.chat-pill.on{display:flex;}
+.pill-dot{width:9px;height:9px;background:#fff;border-radius:50%;animation:pls 1.5s infinite;}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.25;transform:scale(.75);}}
+.unread-badge{background:#fff;color:#c0002a;font-size:11px;font-weight:800;padding:2px 8px;border-radius:100px;}
+
+/* ── UPLOAD OVERLAY ── */
+.upload-overlay{display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:10px 20px;border-radius:100px;font-size:13px;font-weight:600;z-index:9800;align-items:center;gap:10px;font-family:'Inter',sans-serif;white-space:nowrap;}
+.upload-overlay.show{display:flex;}
+
+/* ── VIDEO MODAL ── */
+.media-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:9950;flex-direction:column;align-items:center;justify-content:center;}
+.media-viewer.on{display:flex;}
+.media-viewer img,.media-viewer video{max-width:95vw;max-height:88vh;border-radius:8px;object-fit:contain;}
+.media-viewer-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.media-viewer-dl{position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:18px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .browser-bar,.right-panel{display:none;}
+  .sidebar{display:none;}
+  .shopify-search{max-width:130px;}
+  .order-actions .btn:nth-child(n+3){display:none;}
+  .content{padding:10px;}
+  .bbl{max-width:82%;}
+}
+@media(max-width:900px) and (min-width:601px){
+  .sidebar{width:44px;}
+  .sidebar-item>span:not(.sidebar-badge){display:none;}
+  .sidebar-sub{display:none;}
+  .right-panel{display:none;}
+  .chat-panel{width:380px;}
+}
+</style>
+</head>
+<body>
+<div class="db-banner" id="dbBanner"></div>
+
+<!-- BROWSER BAR -->
+<div class="browser-bar">
+  <div class="browser-tabs">
+    <div class="tab active">🛒 EJAA · Orders · #5837 <span class="tab-close">✕</span></div>
+    <div class="tab">💬 WhatsApp <span class="tab-close">✕</span></div>
+  </div>
+  <div class="address-bar">🔒 https://admin.shopify.com/store/ejaastore/orders/7303512555798</div>
+</div>
+
+<!-- SHOPIFY HEADER -->
+<div class="shopify-header">
+  <div class="shopify-logo">
+    <svg width="24" height="24" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#96bf48"/><text x="5" y="21" font-size="18" fill="#fff">S</text></svg>
+    shopify <span class="shopify-spring">Spring '26</span>
+  </div>
+  <div class="shopify-search">
+    <span>🔍</span><span style="opacity:.5">Search</span>
+    <span style="margin-left:auto;background:#3a3a5e;padding:1px 6px;border-radius:4px;font-size:10px;color:#aaa">⌘K</span>
+  </div>
+  <div class="shopify-header-right">
+    <button class="shopify-icon-btn">🔔</button>
+    <button class="shopify-icon-btn">⚙️</button>
+    <button class="profile-btn" id="profileBtn">EJ</button>
+  </div>
+</div>
+
+<div class="main-layout">
+  <div class="sidebar">
+    <div class="sidebar-item active">🏠<span>Home</span></div>
+    <div class="sidebar-item">📦<span>Orders</span><span class="sidebar-badge">2,889</span></div>
+    <div class="sidebar-sub">Drafts</div><div class="sidebar-sub">Abandoned checkouts</div>
+    <div class="sidebar-item">📌<span>Products</span></div>
+    <div class="sidebar-item">👤<span>Customers</span></div>
+    <div class="sidebar-item">📈<span>Growth</span></div>
+    <div class="sidebar-item">🏷️<span>Discounts</span></div>
+    <div class="sidebar-item">📊<span>Analytics</span></div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-item">🛍️<span>Online Store</span></div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-item">⚙️<span>Settings</span></div>
+  </div>
+  <div class="content">
+    <div class="breadcrumb">📋 › Orders</div>
+    <div class="order-row">
+      <div>
+        <div class="order-title"><h1>#5837</h1><span class="badge badge-yellow">⏳ Payment pending</span><span class="badge badge-orange">📦 Unfulfilled</span></div>
+        <div class="order-meta">June 18, 2026 at 12:05 am from 1CCO (via import)</div>
+      </div>
+      <div class="order-actions"><button class="btn">Restock</button><button class="btn">Edit</button><button class="btn">Print ▾</button><button class="btn">More ▾</button></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span>📦</span><span class="badge-unfulfilled">Unfulfilled</span></div>
+      <div class="shipping-row">🚚 Standard Shipping</div>
+      <div class="product-row">
+        <div class="product-img">💍</div>
+        <div class="product-info"><div class="product-name">Saanjh Silver Tilhari</div><div class="product-variant">Oxidised (Black) · TH-2</div></div>
+        <span class="product-price">₹4,500.00</span>&nbsp;<span class="product-final">₹4,050.00</span>&nbsp;<span class="product-qty">×1</span>&nbsp;<span class="product-total">₹4,050.00</span>
+      </div>
+      <div style="display:flex;justify-content:flex-end;padding:0 15px 12px;"><button class="fulfill-btn">Mark as fulfilled ▾</button></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span>⏳</span><span class="badge-pending">Payment pending</span><span style="margin-left:auto;color:#888">···</span></div>
+      <div class="warning-box">⚠️ COD is still processing. Wait for payment before fulfilling.</div>
+      <div class="summary-row"><span>Subtotal</span><span>₹4,050.00</span></div>
+      <div class="summary-row"><span>Shipping</span><span>₹0.00</span></div>
+      <div class="summary-row total"><span>Total</span><span>₹4,050.00</span></div>
+      <div class="summary-row"><span>Paid</span><span>₹0.00</span></div>
+      <div class="summary-row"><span>Balance</span><span style="color:#e44d36;font-weight:600">₹4,050.00</span></div>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div class="panel-section"><div class="panel-title">Notes <span class="panel-edit">✏️</span></div><div class="panel-text" style="color:#aaa;font-style:italic">No notes from customer</div></div>
+    <div class="panel-section"><div class="panel-title">Details <span class="panel-edit">✏️</span></div><div class="panel-text"><b>fbclid</b><br>PAZXh0bgNh...<br><br><b>utm_medium</b><br>Open+(FB+Insta)<br><br><b>cart_token</b><br>hWND7rKg...</div></div>
+    <div class="panel-section"><div class="panel-title">Tags</div><div class="tag-list"><div class="tag">COD</div><div class="tag">1CCO</div><div class="tag">CBO+Insta</div><div class="tag">All+Product</div><div class="tag">Copy</div></div></div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-icon">🔐</div>
+    <h2>EJAA Secure Panel</h2>
+    <p>Enter your 4-digit access code</p>
+    <input type="password" id="codeInput" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric"/>
+    <div class="modal-error" id="modalError">❌ Wrong code. Try again.</div>
+    <button class="modal-btn" id="loginBtn">Continue →</button>
+  </div>
+</div>
+
+<div class="chat-backdrop" id="chatBackdrop"></div>
+
+<!-- CHAT PANEL -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <button class="chat-back-btn" id="backBtn">‹</button>
+    <div class="header-status-row">
+      <!-- Aku -->
+      <div class="hsr-user">
+        <div class="hsr-av" id="hsrAvAku" style="background:linear-gradient(135deg,#16a34a,#4ade80)">A</div>
+        <div class="hsr-info">
+          <div class="hsr-name">AKU</div>
+          <div class="hsr-status"><div class="hsr-ring" id="ringAku"></div><span class="hsr-st" id="stAku">offline</span></div>
+        </div>
+      </div>
+      <div class="hsr-divider"></div>
+      <!-- Billu -->
+      <div class="hsr-user">
+        <div class="hsr-av" id="hsrAvBillu" style="background:linear-gradient(135deg,#1d4ed8,#60a5fa)">B</div>
+        <div class="hsr-info">
+          <div class="hsr-name">BILLU</div>
+          <div class="hsr-status"><div class="hsr-ring" id="ringBillu"></div><span class="hsr-st" id="stBillu">offline</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="my-pill" id="myPill"></span>
+      <button class="icoBtn" id="minBtn">—</button>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    <canvas id="bgCanvas"></canvas>
+    <div class="chat-empty" id="chatEmpty">
+      <span class="chat-empty-ico">💬</span>
+      No messages yet.<br>Say hello!
+    </div>
+    <div class="typing-row" id="typingRow">
+      <div class="msg-av" id="typingAv" style="width:28px;height:28px;font-size:10px;background:#888"></div>
+      <div class="typing-bbl"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>
+      <span class="typing-name" id="typingName"></span>
+    </div>
+  </div>
+
+  <div class="reply-bar" id="replyBar">
+    <div class="rb-line"></div>
+    <div class="rb-info"><div class="rb-name" id="rbName"></div><div class="rb-txt" id="rbTxt"></div></div>
+    <img class="rb-thumb" id="rbThumb" src="" alt="" style="display:none"/>
+    <button class="rb-cancel" id="rbCancel">✕</button>
+  </div>
+
+  <div class="edit-bar" id="editBar">
+    <span>✏️</span>
+    <span class="edit-bar-txt" id="editBarTxt">Editing…</span>
+    <button class="edit-cancel-btn" id="editCancel">✕</button>
+  </div>
+
+  <div class="emoji-panel-wrap">
+    <div class="emoji-panel" id="emojiPanel"></div>
+    <div class="chat-footer">
+      <div class="footer-left">
+        <button class="ico-btn" id="emojiBtn" title="Emoji">😊</button>
+        <button class="ico-btn" id="mediaBtn" title="Send photo/video">📎</button>
+        <input type="file" id="mediaFileInput" accept="image/*,video/*"/>
+      </div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Message…"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="chat-pill" id="chatPill">
+  <div class="pill-dot"></div>
+  <span>AKCHAT</span>
+  <span class="unread-badge" id="unreadBadge" style="display:none">0</span>
+</div>
+
+<div class="menu-dim" id="menuDim"></div>
+<div class="upload-overlay" id="uploadOverlay">📤 <span id="uploadPct">Uploading…</span></div>
+
+<div class="media-viewer" id="mediaViewer">
+  <a class="media-viewer-dl" id="mvDl" title="Download" download>⬇</a>
+  <button class="media-viewer-close" id="mvClose">✕</button>
+</div>
+
+<script>
+/* ═══════════════════════
+   FIREBASE
+═══════════════════════ */
+firebase.initializeApp({
+  apiKey:"AIzaSyDycrAmK2ObcbcT-L8ord5PDXgKVxonqcw",
+  authDomain:"akchat-fa72d.firebaseapp.com",
+  databaseURL:"https://akchat-fa72d-default-rtdb.firebaseio.com",
+  projectId:"akchat-fa72d",
+  storageBucket:"akchat-fa72d.firebasestorage.app",
+  messagingSenderId:"224246768048",
+  appId:"1:224246768048:web:8a10894cce436de8e2b675"
+});
+const db=firebase.database();
+
+/* ═══════════════════════
+   CLOUDINARY CONFIG
+═══════════════════════ */
+const CLD_URL="https://api.cloudinary.com/v1_1/dl1ishrkv/auto/upload";
+const CLD_PRESET="ml_defaultdgfdf";
+
+/* ═══════════════════════
+   CONFIG
+═══════════════════════ */
+const CODES={"2006":"Aku","2008":"Billu"};
+const UCONF={
+  Aku:{av:"linear-gradient(135deg,#16a34a,#4ade80)",letter:"A",pill:{bg:"#dcfce7",border:"#16a34a",color:"#15803d"}},
+  Billu:{av:"linear-gradient(135deg,#1d4ed8,#60a5fa)",letter:"B",pill:{bg:"#dbeafe",border:"#2563eb",color:"#1d4ed8"}}
+};
+const REACTIONS=["❤️","😂","😮","😢","👍","🔥","😍","🎉"];
+const EMOJIS=["😀","😁","😂","🤣","😄","😅","😊","😎","😍","🥰","🤩","😜","🤔","😢","😭","😡","🔥","❤️","💯","👍","👎","✌️","🙏","💪","🎉","🥂","✨","⚡","🌈","💀","🤡","😈","👻","🍾","🎊","💕","🤝","👏","💬","🚀","🌟","💎","🎯","🏆","⚽","🎮","🎵","🎶","📸","🌙","☀️","🌊","🌺","🦋","🐉","🦁","🐺","🦊","🦄"];
+
+/* ═══════════════════════
+   STATE
+═══════════════════════ */
+let me=null,chatOpen=false,listening=false;
+let typingTimer=null,firstLoad=true;
+let editKey=null,unread=0,replyTo=null;
+let msgMap={},lastDate="";
+// avatar state per user: idle|typing|online|viewing
+const avState={Aku:"idle",Billu:"idle"};
+
+/* ═══════════════════════
+   DOM
+═══════════════════════ */
+const $=id=>document.getElementById(id);
+const modal=$("modal"),codeInput=$("codeInput"),loginBtn=$("loginBtn"),modalError=$("modalError");
+const chatPanel=$("chatPanel"),chatBody=$("chatBody"),chatEmpty=$("chatEmpty");
+const chatInput=$("chatInput"),sendBtn=$("sendBtn");
+const chatPill=$("chatPill"),minBtn=$("minBtn"),backBtn=$("backBtn");
+const myPill=$("myPill");
+const typingRow=$("typingRow"),typingAv=$("typingAv"),typingName=$("typingName");
+const unreadBadge=$("unreadBadge"),dbBanner=$("dbBanner");
+const editBar=$("editBar"),editBarTxt=$("editBarTxt"),editCancel=$("editCancel");
+const replyBar=$("replyBar"),rbName=$("rbName"),rbTxt=$("rbTxt"),rbThumb=$("rbThumb"),rbCancel=$("rbCancel");
+const chatBackdrop=$("chatBackdrop"),menuDim=$("menuDim");
+const mediaBtn=$("mediaBtn"),mediaFileInput=$("mediaFileInput");
+const mediaViewer=$("mediaViewer"),mvClose=$("mvClose"),mvDl=$("mvDl");
+const emojiBtn=$("emojiBtn"),emojiPanel=$("emojiPanel");
+const uploadOverlay=$("uploadOverlay"),uploadPct=$("uploadPct");
+const bgCanvas=$("bgCanvas");
+const profileBtn=$("profileBtn");
+
+/* ═══════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════ */
+(function initBg(){
+  const ctx=bgCanvas.getContext("2d");
+  const orbs=[];
+  const colors=["rgba(128,0,32,.5)","rgba(0,100,200,.4)","rgba(80,0,100,.4)","rgba(200,50,0,.3)","rgba(0,150,100,.35)"];
+  function resize(){bgCanvas.width=bgCanvas.offsetWidth;bgCanvas.height=bgCanvas.offsetHeight;if(!orbs.length)for(let i=0;i<6;i++)orbs.push({x:Math.random()*bgCanvas.width,y:Math.random()*bgCanvas.height,r:40+Math.random()*70,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,c:colors[i%colors.length],phase:Math.random()*Math.PI*2});}
+  window.addEventListener("resize",resize);resize();
+  let af;
+  function draw(){
+    af=requestAnimationFrame(draw);
+    if(!bgCanvas.width)return;
+    ctx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+    ctx.fillStyle="rgba(240,230,255,1)";ctx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
+    orbs.forEach(o=>{
+      o.phase+=.008;o.x+=o.vx+Math.sin(o.phase)*.3;o.y+=o.vy+Math.cos(o.phase*.7)*.25;
+      if(o.x<-o.r)o.x=bgCanvas.width+o.r;if(o.x>bgCanvas.width+o.r)o.x=-o.r;
+      if(o.y<-o.r)o.y=bgCanvas.height+o.r;if(o.y>bgCanvas.height+o.r)o.y=-o.r;
+      const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      g.addColorStop(0,o.c);g.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    });
+  }
+  draw();
+})();
+
+/* ═══════════════════════
+   EMOJI PANEL
+═══════════════════════ */
+EMOJIS.forEach(em=>{
+  const el=document.createElement("span");el.className="ep-e";el.textContent=em;
+  el.addEventListener("click",e=>{
+    e.stopPropagation();
+    const s=chatInput.selectionStart,v=chatInput.value;
+    chatInput.value=v.slice(0,s)+em+v.slice(s);
+    chatInput.focus();chatInput.setSelectionRange(s+em.length,s+em.length);
+    resizeInput();
+  });
+  emojiPanel.appendChild(el);
+});
+emojiBtn.addEventListener("click",e=>{e.stopPropagation();emojiPanel.classList.toggle("on");});
+document.addEventListener("click",()=>emojiPanel.classList.remove("on"));
+emojiPanel.addEventListener("click",e=>e.stopPropagation());
+
+/* ═══════════════════════
+   HELPERS
+═══════════════════════ */
+function showBanner(m){dbBanner.textContent=m;dbBanner.classList.add("show");}
+function hideBanner(){dbBanner.classList.remove("show");}
+function resizeInput(){chatInput.style.height="auto";chatInput.style.height=Math.min(chatInput.scrollHeight,100)+"px";}
+function scrollBottom(){requestAnimationFrame(()=>{chatBody.scrollTop=chatBody.scrollHeight;});}
+
+/* ═══════════════════════
+   AVATAR STATE
+═══════════════════════ */
+const AV_EMOJI={idle:"",typing:"⌨️",viewing:"👀",media:"📸"};
+function setAvState(user,state){
+  avState[user]=state;
+  // Update any rendered avatars for this user
+  document.querySelectorAll(".msg-av[data-user='"+user+"']").forEach(el=>{
+    let ov=el.querySelector(".av-emoji");
+    const em=AV_EMOJI[state];
+    if(em){
+      if(!ov){ov=document.createElement("span");ov.className="av-emoji";el.appendChild(ov);}
+      ov.textContent=em;
+    } else {if(ov)ov.remove();}
+  });
+  // Update typing row avatar if showing
+  if(user!==me&&typingRow.classList.contains("on")){
+    const c=UCONF[user];
+    let ov=typingAv.querySelector(".av-emoji");
+    const em=AV_EMOJI[state];
+    if(em){if(!ov){ov=document.createElement("span");ov.className="av-emoji";typingAv.appendChild(ov);}ov.textContent=em;}
+    else{if(ov)ov.remove();}
+  }
+}
+
+/* ═══════════════════════
+   LOGIN
+═══════════════════════ */
+profileBtn.addEventListener("click",()=>{
+  if(me){openChat();return;}
+  modal.classList.add("active");
+  setTimeout(()=>codeInput.focus(),80);
+});
+modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
+
+function closeModal(){modal.classList.remove("active");codeInput.value="";modalError.style.display="none";}
+
+function doLogin(){
+  const code=codeInput.value.trim(),user=CODES[code];
+  if(!user){modalError.style.display="block";codeInput.value="";codeInput.focus();return;}
+  me=user;
+  closeModal();
+  const c=UCONF[me];
+  const p=c.pill;
+  myPill.textContent=me;myPill.style.background=p.bg;myPill.style.borderColor=p.border;myPill.style.color=p.color;
+  openChat();
+  if(!listening){listening=true;startListening();}
+  setPresence(true);
+}
+loginBtn.addEventListener("click",doLogin);
+codeInput.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+
+/* ═══════════════════════
+   OPEN / CLOSE
+═══════════════════════ */
+function openChat(){
+  chatPanel.classList.add("active");
+  chatBackdrop.classList.add("active");
+  chatPill.classList.remove("on");
+  chatOpen=true;unread=0;unreadBadge.style.display="none";
+  scrollBottom();
+  // mark seen
+  if(me)db.ref("akchat/seen/"+me).set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{});
+}
+function closeChat(){
+  chatPanel.classList.remove("active");
+  chatBackdrop.classList.remove("active");
+  chatOpen=false;
+  if(me)chatPill.classList.add("on");
+}
+chatBackdrop.addEventListener("click",closeChat);
+backBtn.addEventListener("click",closeChat);
+minBtn.addEventListener("click",e=>{e.stopPropagation();closeChat();});
+chatPill.addEventListener("click",openChat);
+
+/* ═══════════════════════
+   PRESENCE
+═══════════════════════ */
+function setPresence(on){
+  if(!me)return;
+  const ref=db.ref("akchat/online/"+me);
+  if(on){ref.set(true).catch(()=>{});ref.onDisconnect().remove();}
+  else ref.remove().catch(()=>{});
+}
+function listenPresence(){
+  ["Aku","Billu"].forEach(u=>{
+    const ring=u==="Aku"?$("ringAku"):$("ringBillu");
+    const st=u==="Aku"?$("stAku"):$("stBillu");
+    db.ref("akchat/online/"+u).on("value",snap=>{
+      const on=!!snap.val();
+      ring.className="hsr-ring "+(on?"online":"offline");
+      st.textContent=on?"online":"offline";
+      setAvState(u,on?(avState[u]==="idle"?"idle":avState[u]):"idle");
+    });
+  });
+}
+listenPresence();
+window.addEventListener("beforeunload",()=>{setPresence(false);stopTyping();});
+window.addEventListener("pagehide",()=>{setPresence(false);stopTyping();});
+
+/* ═══════════════════════
+   SEEN
+═══════════════════════ */
+let seenData={};
+function listenSeen(){
+  db.ref("akchat/seen").on("value",snap=>{
+    seenData=snap.val()||{};
+    // Update all seen badges
+    Object.keys(msgMap).forEach(key=>updateSeenBadge(key));
+  });
+}
+function updateSeenBadge(key){
+  const n=msgMap[key];if(!n)return;
+  const d=n.data;
+  if(!d||d.sender!==me)return; // only show seen on our own messages
+  const other=me==="Aku"?"Billu":"Aku";
+  const seenTs=seenData[other]||0;
+  const msgTs=d.ts||0;
+  const seen=seenTs>=msgTs;
+  let sb=n.wrap.querySelector(".seen-badge");
+  if(seen&&!d.deleted){
+    if(!sb){
+      sb=document.createElement("div");sb.className="seen-badge";
+      const c=UCONF[other];
+      const av=document.createElement("div");av.className="seen-av-mini";av.style.background=c.av;av.textContent=c.letter;
+      const lbl=document.createElement("span");lbl.textContent="Seen by "+other;
+      sb.appendChild(av);sb.appendChild(lbl);
+      n.wrap.appendChild(sb);
+    }
+  } else {if(sb)sb.remove();}
+}
+
+/* ═══════════════════════
+   REPLY
+═══════════════════════ */
+function startReply(key,data){
+  replyTo={key,sender:data.sender,text:data.text||"",mediaUrl:data.mediaUrl||null,mediaType:data.mediaType||null};
+  rbName.textContent="↩ Replying to "+data.sender;
+  if(data.mediaUrl&&data.mediaType==="image"){rbTxt.textContent="📷 Photo";rbThumb.src=data.mediaUrl;rbThumb.style.display="block";}
+  else if(data.mediaUrl&&data.mediaType==="video"){rbTxt.textContent="🎥 Video";rbThumb.style.display="none";}
+  else{rbTxt.textContent=data.text||"";rbThumb.style.display="none";}
+  replyBar.classList.add("on");chatInput.focus();
+  flashWrap(key);
+}
+function cancelReply(){replyTo=null;replyBar.classList.remove("on");}
+rbCancel.addEventListener("click",cancelReply);
+function flashWrap(key){
+  const n=msgMap[key];if(!n)return;
+  n.wrap.style.transition="background .4s";n.wrap.style.background="rgba(128,0,32,.15)";
+  setTimeout(()=>{if(msgMap[key])msgMap[key].wrap.style.background="";},700);
+}
+
+/* ═══════════════════════
+   SEND TEXT
+═══════════════════════ */
+function sendMessage(){
+  const text=chatInput.value.trim();
+  if(!me)return;
+  if(editKey){
+    if(!text)return;
+    db.ref("akchat/messages/"+editKey).update({text,edited:true}).then(()=>{cancelEdit();hideBanner();}).catch(e=>showBanner("Edit failed:"+e.code));
+    return;
+  }
+  if(!text)return;
+  sendBtn.disabled=true;
+  const payload={text,sender:me,ts:firebase.database.ServerValue.TIMESTAMP};
+  if(replyTo)payload.replyTo={key:replyTo.key,sender:replyTo.sender,text:replyTo.text,mediaUrl:replyTo.mediaUrl||null,mediaType:replyTo.mediaType||null};
+  db.ref("akchat/messages").push(payload)
+    .then(()=>{chatInput.value="";resizeInput();stopTyping();hideBanner();cancelReply();})
+    .catch(e=>showBanner("Send failed ("+e.code+"): Firebase → Realtime DB → Rules → read+write=true"))
+    .finally(()=>sendBtn.disabled=false);
+}
+sendBtn.addEventListener("click",sendMessage);
+chatInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+chatInput.addEventListener("input",()=>{resizeInput();startTyping();});
+
+/* ═══════════════════════
+   CLOUDINARY UPLOAD
+═══════════════════════ */
+mediaBtn.addEventListener("click",()=>{if(!me){alert("Login first");return;}mediaFileInput.click();});
+
+mediaFileInput.addEventListener("change",async e=>{
+  const file=e.target.files[0];if(!file)return;
+  mediaFileInput.value="";
+  if(!me)return;
+  const isVideo=file.type.startsWith("video/");
+  const localUrl=URL.createObjectURL(file);
+  const tempKey="tmp_"+Date.now();
+  const savedReply=replyTo?{...replyTo}:null;
+  renderMsg(tempKey,{sender:me,ts:Date.now(),text:"",_localUrl:localUrl,_uploading:true,mediaType:isVideo?"video":"image",replyTo:savedReply});
+  cancelReply();scrollBottom();
+  uploadOverlay.classList.add("show");uploadPct.textContent="Uploading 0%";
+  try{
+    const fd=new FormData();
+    fd.append("upload_preset",CLD_PRESET);
+    fd.append("file",file);
+    const mediaUrl=await new Promise((res,rej)=>{
+      const xhr=new XMLHttpRequest();
+      xhr.open("POST",CLD_URL);
+      xhr.upload.onprogress=ev=>{
+        if(ev.lengthComputable){
+          const p=Math.round(ev.loaded/ev.total*100);
+          uploadPct.textContent="Uploading "+p+"%";
+          const bar=msgMap[tempKey]?.wrap.querySelector(".upload-bar");
+          if(bar)bar.style.width=p+"%";
+        }
+      };
+      xhr.onload=()=>{try{const r=JSON.parse(xhr.responseText);if(r.secure_url)res(r.secure_url);else rej(new Error(xhr.responseText));}catch(ex){rej(ex);}};
+      xhr.onerror=()=>rej(new Error("Network error"));
+      xhr.send(fd);
+    });
+    if(msgMap[tempKey]){msgMap[tempKey].wrap.remove();delete msgMap[tempKey];}
+    URL.revokeObjectURL(localUrl);
+    uploadOverlay.classList.remove("show");
+    const payload={text:"",sender:me,ts:firebase.database.ServerValue.TIMESTAMP,mediaUrl,mediaType:isVideo?"video":"image"};
+    if(savedReply)payload.replyTo=savedReply;
+    await db.ref("akchat/messages").push(payload);
+    hideBanner();
+  }catch(err){
+    console.error(err);
+    if(msgMap[tempKey]){msgMap[tempKey].wrap.remove();delete msgMap[tempKey];}
+    URL.revokeObjectURL(localUrl);
+    uploadOverlay.classList.remove("show");
+    showBanner("Upload failed: "+err.message);
+  }
+});
+
+/* ═══════════════════════
+   TYPING
+═══════════════════════ */
+function startTyping(){
+  if(!me)return;
+  db.ref("akchat/typing/"+me).set(true).catch(()=>{});
+  clearTimeout(typingTimer);
+  typingTimer=setTimeout(stopTyping,2500);
+  setAvState(me,"typing");
+  db.ref("akchat/avstate/"+me).set("typing").catch(()=>{});
+}
+function stopTyping(){
+  if(!me)return;
+  db.ref("akchat/typing/"+me).remove().catch(()=>{});
+  setAvState(me,"idle");
+  db.ref("akchat/avstate/"+me).remove().catch(()=>{});
+}
+
+/* ═══════════════════════
+   EDIT
+═══════════════════════ */
+function startEdit(key,text){
+  editKey=key;chatInput.value=text;resizeInput();
+  editBarTxt.textContent="Editing: "+text.slice(0,50)+(text.length>50?"…":"");
+  editBar.classList.add("on");chatInput.focus();
+}
+function cancelEdit(){editKey=null;chatInput.value="";resizeInput();editBar.classList.remove("on");}
+editCancel.addEventListener("click",cancelEdit);
+
+/* ═══════════════════════
+   REACTIONS
+═══════════════════════ */
+let activePicker=null;
+function closePicker(){if(activePicker){activePicker.remove();activePicker=null;}}
+function showPicker(key,anchorEl){
+  closePicker();closeCtx();
+  const rect=anchorEl.getBoundingClientRect();
+  const pk=document.createElement("div");pk.className="rx-picker";
+  REACTIONS.forEach(em=>{
+    const b=document.createElement("button");b.textContent=em;
+    b.addEventListener("pointerup",e=>{e.stopPropagation();toggleReaction(key,em);closePicker();hideMenuDim();});
+    pk.appendChild(b);
+  });
+  document.body.appendChild(pk);
+  const pw=pk.offsetWidth,ph=pk.offsetHeight;
+  let top=rect.top-ph-10,left=rect.left;
+  if(top<8)top=rect.bottom+10;
+  left=Math.max(8,Math.min(left,window.innerWidth-pw-8));
+  pk.style.top=top+"px";pk.style.left=left+"px";
+  activePicker=pk;showMenuDim();
+}
+function toggleReaction(key,emoji){
+  if(!me)return;
+  const path="akchat/reactions/"+key+"/"+emoji+"/"+me;
+  db.ref(path).once("value").then(snap=>{snap.val()?db.ref(path).remove():db.ref(path).set(true);}).catch(()=>{});
+}
+
+/* ═══════════════════════
+   CONTEXT MENU
+═══════════════════════ */
+let activeCtx=null;
+function closeCtx(){if(activeCtx){activeCtx.remove();activeCtx=null;}}
+function showCtx(key,data,x,y){
+  closeCtx();closePicker();
+  const isMine=data.sender===me,isDel=!!data.deleted;
+  const items=[];
+  if(!isDel){
+    items.push({i:"↩️",l:"Reply",fn:()=>startReply(key,data)});
+    items.push({i:"😊",l:"React",fn:()=>{const b=msgMap[key]?.bbl;if(b)showPicker(key,b);}});
+  }
+  if(!data.mediaUrl&&!isDel)items.push({i:"📋",l:"Copy text",fn:()=>{try{navigator.clipboard.writeText(data.text);}catch(e){}}});
+  if(data.mediaUrl)items.push({i:"⬇️",l:"Download",fn:()=>{const a=document.createElement("a");a.href=data.mediaUrl;a.download="media";a.target="_blank";a.click();}});
+  if(isMine&&!data.mediaUrl&&!isDel)items.push({i:"✏️",l:"Edit",fn:()=>startEdit(key,data.text)});
+  if(isMine&&!isDel)items.push({i:"🗑️",l:"Delete",fn:()=>{db.ref("akchat/messages/"+key).update({text:"",deleted:true,mediaUrl:null}).catch(()=>{});db.ref("akchat/reactions/"+key).remove().catch(()=>{});},danger:true});
+  const menu=document.createElement("div");menu.className="ctx-menu";
+  items.forEach(it=>{
+    const el=document.createElement("div");el.className="ctx-item"+(it.danger?" danger":"");
+    el.innerHTML=`<span class="ctx-i">${it.i}</span><span>${it.l}</span>`;
+    el.addEventListener("pointerup",e=>{e.stopPropagation();closeCtx();hideMenuDim();it.fn();});
+    menu.appendChild(el);
+  });
+  document.body.appendChild(menu);
+  const mw=menu.offsetWidth,mh=menu.offsetHeight;
+  let cx=Math.max(8,Math.min(x,window.innerWidth-mw-8));
+  let cy=y+mh>window.innerHeight-8?y-mh:y;
+  if(cy<8)cy=8;
+  menu.style.left=cx+"px";menu.style.top=cy+"px";
+  activeCtx=menu;showMenuDim();
+}
+function showMenuDim(){menuDim.classList.add("on");}
+function hideMenuDim(){menuDim.classList.remove("on");}
+menuDim.addEventListener("pointerup",()=>{closeCtx();closePicker();hideMenuDim();});
+
+/* ═══════════════════════
+   FIREBASE LISTENERS
+═══════════════════════ */
+function startListening(){
+  const other=me==="Aku"?"Billu":"Aku";
+  listenSeen();
+
+  // Typing
+  db.ref("akchat/typing/"+other).on("value",snap=>{
+    const on=!!snap.val();
+    typingRow.classList.toggle("on",on);
+    if(on){
+      const c=UCONF[other];
+      typingAv.style.background=c.av;typingAv.textContent=c.letter;
+      typingName.textContent=other+" is typing";
+      setAvState(other,"typing");
+    } else {
+      setAvState(other,"idle");
+    }
+    if(on)scrollBottom();
+  });
+
+  // Avatar state from other user
+  db.ref("akchat/avstate/"+other).on("value",snap=>{
+    const st=snap.val()||"idle";
+    setAvState(other,st);
+  });
+
+  // Messages
+  db.ref("akchat/messages").on("child_added",snap=>{
+    const d=snap.val();if(!d)return;
+    chatEmpty.style.display="none";
+    renderMsg(snap.key,d);
+    if(!firstLoad&&d.sender!==me&&!chatOpen){
+      unread++;unreadBadge.style.display="inline-block";unreadBadge.textContent=unread;
+    }
+    // If we're open, mark seen
+    if(chatOpen&&d.sender!==me){
+      db.ref("akchat/seen/"+me).set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{});
+    }
+    scrollBottom();
+  },err=>showBanner("Firebase blocked ("+err.code+"): Set read+write=true in Firebase → Realtime DB → Rules"));
+
+  db.ref("akchat/messages").on("child_changed",snap=>{
+    const d=snap.val(),key=snap.key;
+    if(!d||!msgMap[key])return;
+    msgMap[key].data=d;
+    const txtEl=msgMap[key].bbl.querySelector(".bbl-txt");
+    if(txtEl)txtEl.textContent=d.deleted?"🚫 Message deleted":d.text||"";
+    if(d.deleted)msgMap[key].bbl.classList.add("deleted");
+    const edEl=msgMap[key].bbl.querySelector(".bbl-edited");
+    if(edEl)edEl.style.display=d.edited&&!d.deleted?"inline":"none";
+  });
+
+  db.ref("akchat/reactions").on("value",snap=>{
+    const all=snap.val()||{};
+    Object.keys(msgMap).forEach(key=>updateRxUI(key,all[key]||{}));
+  });
+
+  setTimeout(()=>{firstLoad=false;},2000);
+}
+
+/* ═══════════════════════
+   RENDER MESSAGE
+═══════════════════════ */
+function renderMsg(key,d){
+  const isOut=d.sender===me;
+  const ts=d.ts||Date.now();
+  const dateStr=new Date(ts).toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"});
+  if(dateStr!==lastDate){lastDate=dateStr;const dv=document.createElement("div");dv.className="date-div";dv.innerHTML="<span>"+dateStr+"</span>";chatBody.insertBefore(dv,typingRow);}
+
+  const c=UCONF[d.sender]||{av:"#888",letter:"?"};
+  const group=document.createElement("div");group.className="mg "+(isOut?"out":"in");
+
+  // Name line with avatar
+  const nameLine=document.createElement("div");nameLine.className="mg-nameline";
+  const av=document.createElement("div");av.className="msg-av";av.dataset.user=d.sender;
+  av.style.background=c.av;av.textContent=c.letter;
+  const nameEl=document.createElement("span");nameEl.className="mg-name-txt";nameEl.textContent=d.sender.toUpperCase();
+  if(isOut){nameLine.appendChild(nameEl);nameLine.appendChild(av);}
+  else{nameLine.appendChild(av);nameLine.appendChild(nameEl);}
+  group.appendChild(nameLine);
+
+  // Message row
+  const row=document.createElement("div");row.className="mr";
+
+  // Action buttons
+  const rBtn=document.createElement("button");rBtn.className="act-btn";rBtn.title="React";rBtn.textContent="😊";
+  rBtn.addEventListener("click",e=>{e.stopPropagation();showPicker(key,bbl);});
+  const repBtn=document.createElement("button");repBtn.className="act-btn";repBtn.title="Reply";repBtn.textContent="↩";
+  repBtn.addEventListener("click",e=>{e.stopPropagation();startReply(key,d);});
+
+  // Bubble
+  const bbl=document.createElement("div");bbl.className="bbl "+(isOut?"out":"in");
+  if(d.deleted)bbl.classList.add("deleted");
+
+  // Reply preview
+  if(d.replyTo&&!d.deleted){
+    const rp=document.createElement("div");rp.className="reply-preview";
+    const rpn=document.createElement("div");rpn.className="rp-name";rpn.textContent="↩ "+d.replyTo.sender;
+    const rpt=document.createElement("div");rpt.className="rp-txt";
+    if(d.replyTo.mediaUrl&&d.replyTo.mediaType==="image"){
+      rpt.textContent="📷 Photo";
+      const rpImg=document.createElement("img");rpImg.className="rp-img-thumb";rpImg.src=d.replyTo.mediaUrl;rpImg.loading="lazy";
+      rp.appendChild(rpn);rp.appendChild(rpt);rp.appendChild(rpImg);
+    } else if(d.replyTo.mediaUrl&&d.replyTo.mediaType==="video"){
+      rpt.textContent="🎥 Video";rp.appendChild(rpn);rp.appendChild(rpt);
+    } else {
+      rpt.textContent=d.replyTo.text||"";rp.appendChild(rpn);rp.appendChild(rpt);
+    }
+    rp.addEventListener("click",e=>{e.stopPropagation();if(d.replyTo.key){const orig=msgMap[d.replyTo.key];if(orig){orig.wrap.scrollIntoView({behavior:"smooth",block:"center"});flashWrap(d.replyTo.key);}}});
+    bbl.appendChild(rp);
+  }
+
+  // Media (image or video)
+  const mediaUrl=d.mediaUrl||d._localUrl;
+  const mediaType=d.mediaType||"image";
+  if(mediaUrl&&!d.deleted){
+    const mWrap=document.createElement("div");mWrap.className="bbl-media";
+    if(mediaType==="video"){
+      const vid=document.createElement("video");
+      vid.src=mediaUrl;vid.controls=true;vid.preload="metadata";vid.style.maxHeight="260px";
+      if(d._localUrl){vid.src=d._localUrl;}
+      mWrap.appendChild(vid);
+      if(d._uploading){
+        const prog=document.createElement("div");prog.className="upload-prog";
+        const bar=document.createElement("div");bar.className="upload-bar";
+        const pct=document.createElement("div");pct.className="upload-pct-lbl";pct.textContent="0%";
+        prog.appendChild(bar);mWrap.appendChild(prog);mWrap.appendChild(pct);
+        vid.style.opacity=".6";
+      }
+    } else {
+      // Image
+      if(!d._localUrl){
+        const shim=document.createElement("div");shim.className="media-shimmer";shim.textContent="🖼️";mWrap.appendChild(shim);
+      }
+      const img=document.createElement("img");img.loading="lazy";
+      img.style.opacity=d._localUrl?"1":"0";img.style.transition="opacity .3s";
+      if(!d._localUrl){img.onload=()=>{const s=mWrap.querySelector(".media-shimmer");if(s)s.remove();img.style.opacity="1";};}
+      img.src=mediaUrl;
+      if(d._uploading){
+        const prog=document.createElement("div");prog.className="upload-prog";
+        const bar=document.createElement("div");bar.className="upload-bar";
+        const pct=document.createElement("div");pct.className="upload-pct-lbl";pct.textContent="0%";
+        prog.appendChild(bar);mWrap.appendChild(prog);mWrap.appendChild(pct);
+      }
+      mWrap.appendChild(img);
+    }
+    if(mediaType==="image"){
+      mWrap.addEventListener("click",e=>{
+        e.stopPropagation();
+        openMediaViewer(mediaUrl,"image");
+        // Set avatar state
+        if(me){setAvState(me,"media");db.ref("akchat/avstate/"+me).set("media").catch(()=>{});setTimeout(()=>{setAvState(me,"idle");db.ref("akchat/avstate/"+me).remove().catch(()=>{});},4000);}
+      });
+    }
+    bbl.appendChild(mWrap);
+  }
+
+  // Text
+  if(!d.deleted&&d.text){
+    const txtEl=document.createElement("span");txtEl.className="bbl-txt";txtEl.textContent=d.text;bbl.appendChild(txtEl);
+  } else if(d.deleted){
+    const txtEl=document.createElement("span");txtEl.className="bbl-txt";txtEl.style.fontSize="13px";txtEl.textContent="🚫 Message deleted";bbl.appendChild(txtEl);
+  }
+
+  // Meta
+  const meta=document.createElement("div");meta.className="bbl-meta";
+  const tEl=document.createElement("span");tEl.className="bbl-time";tEl.textContent=new Date(ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  meta.appendChild(tEl);
+  if(isOut){const tick=document.createElement("span");tick.className="bbl-tick";tick.textContent="✓✓";meta.appendChild(tick);}
+  const edEl=document.createElement("span");edEl.className="bbl-edited";edEl.textContent="edited";edEl.style.display=d.edited&&!d.deleted?"inline":"none";
+  meta.appendChild(edEl);
+  bbl.appendChild(meta);
+
+  // Row assembly
+  if(isOut){row.appendChild(repBtn);row.appendChild(rBtn);row.appendChild(bbl);}
+  else{row.appendChild(bbl);row.appendChild(rBtn);row.appendChild(repBtn);}
+  group.appendChild(row);
+
+  // Reactions bar
+  const rxBar=document.createElement("div");rxBar.className="rx-bar";group.appendChild(rxBar);
+
+  chatBody.insertBefore(group,typingRow);
+  msgMap[key]={wrap:group,bbl,rxBar,data:d};
+  updateSeenBadge(key);
+
+  /* TOUCH EVENTS */
+  let lpTimer=null,lpFired=false,dragStartX=0,startY=0,dragging=false;
+  bbl.addEventListener("touchstart",e=>{
+    lpFired=false;dragging=false;
+    dragStartX=e.touches[0].clientX;startY=e.touches[0].clientY;
+    lpTimer=setTimeout(()=>{lpFired=true;navigator.vibrate&&navigator.vibrate(40);showCtx(key,d,dragStartX,startY);},480);
+  },{passive:true});
+  bbl.addEventListener("touchmove",e=>{
+    const dx=e.touches[0].clientX-dragStartX,dy=Math.abs(e.touches[0].clientY-startY);
+    if(Math.abs(dx)>8||dy>10)clearTimeout(lpTimer);
+    const swipe=isOut?(dragStartX-e.touches[0].clientX):(e.touches[0].clientX-dragStartX);
+    if(swipe>6&&dy<28&&!lpFired){dragging=true;const cl=Math.min(swipe,60);row.style.transform=isOut?`translateX(-${cl}px)`:`translateX(${cl}px)`;}
+  },{passive:true});
+  bbl.addEventListener("touchend",e=>{
+    clearTimeout(lpTimer);if(lpFired){e.preventDefault();return;}
+    const dx=isOut?(dragStartX-e.changedTouches[0].clientX):(e.changedTouches[0].clientX-dragStartX);
+    row.style.transform="";
+    if(dragging&&dx>50){navigator.vibrate&&navigator.vibrate([8,20,8]);startReply(key,d);}
+    dragging=false;
+  });
+  bbl.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation();showCtx(key,d,e.clientX,e.clientY);});
+  bbl.addEventListener("mouseenter",()=>{rBtn.style.opacity="1";repBtn.style.opacity="1";});
+  bbl.addEventListener("mouseleave",()=>{rBtn.style.opacity="";repBtn.style.opacity="";});
+}
+
+/* ═══════════════════════
+   REACTIONS UI
+═══════════════════════ */
+function updateRxUI(key,rxData){
+  const n=msgMap[key];if(!n)return;
+  n.rxBar.innerHTML="";
+  const totals={},mine=new Set();
+  Object.entries(rxData).forEach(([em,users])=>{
+    const c=Object.keys(users).length;
+    if(c>0){totals[em]=c;if(me&&users[me])mine.add(em);}
+  });
+  Object.entries(totals).forEach(([em,cnt])=>{
+    const chip=document.createElement("div");chip.className="rx-chip"+(mine.has(em)?" mine":"");
+    chip.innerHTML=`<span class="rc">${em}</span><span class="rn">${cnt}</span>`;
+    chip.addEventListener("click",e=>{e.stopPropagation();toggleReaction(key,em);});
+    n.rxBar.appendChild(chip);
+  });
+}
+
+/* ═══════════════════════
+   MEDIA VIEWER
+═══════════════════════ */
+function openMediaViewer(url,type){
+  // Remove old content
+  while(mediaViewer.children.length>2)mediaViewer.removeChild(mediaViewer.lastChild);
+  if(type==="video"){
+    const vid=document.createElement("video");vid.src=url;vid.controls=true;vid.autoplay=true;vid.style.maxWidth="95vw";vid.style.maxHeight="88vh";vid.style.borderRadius="8px";
+    mediaViewer.appendChild(vid);
+  } else {
+    const img=document.createElement("img");img.src=url;img.style.maxWidth="95vw";img.style.maxHeight="88vh";img.style.borderRadius="8px";img.style.objectFit="contain";
+    mediaViewer.appendChild(img);
+  }
+  mvDl.href=url;
+  mediaViewer.classList.add("on");
+}
+mvClose.addEventListener("click",()=>{
+  mediaViewer.classList.remove("on");
+  const vid=mediaViewer.querySelector("video");if(vid)vid.pause();
+});
+mediaViewer.addEventListener("click",e=>{if(e.target===mediaViewer){mediaViewer.classList.remove("on");const vid=mediaViewer.querySelector("video");if(vid)vid.pause();}});
+
+/* ═══════════════════════
+   KEYBOARD (Android)
+═══════════════════════ */
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",()=>{
+    if(!chatOpen)return;
+    const off=window.innerHeight-window.visualViewport.height;
+    chatPanel.style.bottom=Math.max(0,off)+"px";
+  });
+}
+
+/* ═══════════════════════
+   GLOBAL DISMISS
+═══════════════════════ */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){closeModal();closePicker();closeCtx();hideMenuDim();mediaViewer.classList.remove("on");}
+});
+</script>
+</body>
+</html>
