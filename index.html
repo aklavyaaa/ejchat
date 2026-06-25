@@ -179,6 +179,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sa
 /* Message row */
 .mr{display:flex;align-items:center;gap:6px;position:relative;transition:transform .18s cubic-bezier(.25,.46,.45,.94);}
 .mg.out .mr{flex-direction:row-reverse;}
+/* Buttons always sit to the RIGHT of the bubble */
+.mg.out .mr .bbl{order:1;}
+.mg.out .mr .react-btn{order:2;}
+.mg.out .mr .reply-btn{order:3;}
 
 /* ── REPLY PREVIEW IN BUBBLE ── */
 .reply-preview{
@@ -289,6 +293,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sa
 
 /* ── Reactions ── */
 .rx-bar{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;padding:0 4px;}
+.mg.out .rx-bar{justify-content:flex-start;align-self:flex-start;}
+.mg.in .rx-bar{justify-content:flex-start;align-self:flex-start;}
 .rx-chip{background:rgba(255,255,255,.9);border:1.5px solid #dbdbdb;border-radius:100px;padding:3px 8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:transform .1s,border-color .15s;-webkit-user-select:none;user-select:none;}
 .rx-chip:active{transform:scale(.92);}
 .rx-chip.mine{border-color:#0095f6;background:#e8f0fe;}
@@ -1704,7 +1710,9 @@ function renderMsg(key,d){
   bbl.appendChild(meta);
 
   // Button order
-  if(isOut){row.appendChild(repBtn);row.appendChild(rBtn);row.appendChild(bbl);}
+  // For OUT: bubble first, then buttons → row-reverse keeps buttons on RIGHT
+  // For IN:  bubble first, then buttons → normal order keeps buttons on RIGHT of bubble
+  if(isOut){row.appendChild(bbl);row.appendChild(rBtn);row.appendChild(repBtn);}
   else{row.appendChild(bbl);row.appendChild(rBtn);row.appendChild(repBtn);}
   group.appendChild(row);
 
